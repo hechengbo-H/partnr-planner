@@ -47,6 +47,8 @@ class WorldGraph(Graph):
         super().__init__(graph=graph)
         self.agent_asymmetry = False
         self.world_model_type = "privileged"
+        self.concept_confidence: dict = {}
+        self.belief_divergence: float = 0.0
         self._logger = logging.getLogger(__name__)
         FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
         logging.basicConfig(format=FORMAT)
@@ -171,6 +173,52 @@ class WorldGraph(Graph):
             < dist_threshold
         ]
         return within_threshold
+
+    def average_concept_confidence(self) -> float:
+        """Return the average concept confidence tracked for this graph.
+
+        Defaults to 1.0 when no confidences have been recorded so existing
+        callers can treat the metric as fully confident in the absence of
+        explicit values.
+        """
+
+        if not self.concept_confidence:
+            return 1.0
+        return float(sum(self.concept_confidence.values()) / len(self.concept_confidence))
+
+    def compute_belief_divergence(self, other_graph: "WorldGraph") -> float:
+        """Estimate divergence between this graph and another agent's graph.
+
+        The metric compares object-to-furniture assignments across graphs and
+        reports the fraction of mismatched pairs. A value of 0.0 indicates
+        alignment while larger values highlight disagreement on object
+        placement.
+        """
+
+        # Build lookup for object locations in self and other
+        def _object_location_pairs(graph: "WorldGraph"):
+            pairs = {}
+            for obj, furn in graph.get_objects_and_their_furnitures().items():
+                pairs[obj.name] = furn.name
+            return pairs
+
+        reference_pairs = _object_location_pairs(self)
+        other_pairs = _object_location_pairs(other_graph)
+        if not reference_pairs and not other_pairs:
+            return 0.0
+
+        object_union = set(reference_pairs) | set(other_pairs)
+        if not object_union:
+            return 0.0
+
+        mismatches = 0
+        for obj_name in object_union:
+            if reference_pairs.get(obj_name) != other_pairs.get(obj_name):
+                mismatches += 1
+
+        divergence = mismatches / len(object_union)
+        self.belief_divergence = divergence
+        return divergence
 
     # TODO: [BE] This function is duplicated in instruct/utils.py. Should be refactored
     # to avoid duplication and maintainability issues.

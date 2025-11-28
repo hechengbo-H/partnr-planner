@@ -17,6 +17,7 @@ from habitat_llm.llm.instruct.utils import (
     get_world_descr,
 )
 from habitat_llm.planner.planner import Planner
+from habitat_llm.planner.belief_hooks import BeliefMetrics, choose_belief_action
 from habitat_llm.utils.grammar import (
     FREE_TEXT,
     FURNITURE,
@@ -71,6 +72,8 @@ class LLMPlanner(Planner):
         # any other material in prompt
         self.trace: str = ""
         self.rag: Optional["RAG"] = None
+        self.last_belief_hook_reason: str = ""
+        self.last_belief_hook: Optional[str] = None
 
         self.reset()
 
@@ -100,6 +103,8 @@ class LLMPlanner(Planner):
         self.trace: str = ""
         self.curr_obj_states: str = ""
         self.params: Dict[str, Any] = {}
+        self.last_belief_hook_reason = ""
+        self.last_belief_hook = None
 
         # Reset agents
         for agent in self._agents:
@@ -628,6 +633,24 @@ class LLMPlanner(Planner):
         print_str = ""
         self.is_done = False
 
+        # Belief-aware hook to route to defer/ask/correct actions
+        hook_action = None
+        hook_reason = ""
+        decision_conf = self.planner_config.get("decision_hooks", {})
+        if decision_conf.get("enable", False):
+            metrics = BeliefMetrics(
+                avg_concept_confidence=world_graph[self._agents[0].uid].average_concept_confidence(),
+                belief_divergence=self.env_interface.belief_divergence,
+            )
+            hook_action, hook_reason = choose_belief_action(decision_conf, metrics)
+            if hook_action:
+                self.last_belief_hook = hook_action
+                self.last_belief_hook_reason = hook_reason
+                self.last_high_level_actions = {
+                    agent.uid: (hook_action, hook_reason, "") for agent in self.agents
+                }
+                self.replan_required = False
+
         if self.replan_required:
             planner_info["replanned"] = {agent.uid: True for agent in self.agents}
             if verbose:
@@ -737,6 +760,8 @@ class LLMPlanner(Planner):
         planner_info["agent_states"] = self.get_last_agent_states()
         planner_info["agent_positions"] = self.get_last_agent_positions()
         planner_info["agent_collisions"] = self.get_agent_collisions()
+        planner_info["belief_hook"] = self.last_belief_hook if hook_action is None else hook_action
+        planner_info["belief_hook_reason"] = self.last_belief_hook_reason if hook_action is None else hook_reason
         return low_level_actions, planner_info, self.is_done
 
     def check_if_agent_done(self, llm_response: str) -> bool:

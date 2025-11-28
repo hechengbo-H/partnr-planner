@@ -186,6 +186,9 @@ class Planner:
 
         # update world based on actions
         self.update_world(responses)
+        # refresh belief divergence tracking after any world update
+        if hasattr(self.env_interface, "recompute_belief_divergence"):
+            self.env_interface.recompute_belief_divergence()
 
         return low_level_actions, responses
 

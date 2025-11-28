@@ -1,0 +1,7 @@
+# The tag below must match file name!
+correct_human_tool:
+  _target_   : habitat_llm.tools.perception.CorrectHumanTool
+  _recursive_: False
+  skill_config:
+    name: 'CorrectHuman'
+    description: "State the robot's belief to correct the human when divergence stays high."

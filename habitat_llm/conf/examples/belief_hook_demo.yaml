@@ -1,0 +1,7 @@
+demo:
+  description: "Toy configuration for belief-aware planner demo."
+  decision_hooks:
+    enable: True
+    concept_confidence_threshold: 0.6
+    divergence_threshold: 0.25
+    correction_divergence_threshold: 0.4

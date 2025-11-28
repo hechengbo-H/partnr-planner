@@ -1,0 +1,7 @@
+# The tag below must match file name!
+ask_human_tool:
+  _target_   : habitat_llm.tools.perception.AskHumanTool
+  _recursive_: False
+  skill_config:
+    name: 'AskHuman'
+    description: "Ask the human for guidance when the robot's belief diverges."

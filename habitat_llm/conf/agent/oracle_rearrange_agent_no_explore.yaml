@@ -13,5 +13,8 @@ defaults:
     - find_object_tool
     - find_agent_action_tool
     - find_room_tool
+    - ask_human_tool
+    - append_observation_tool
+    - correct_human_tool
 
 env: habitat

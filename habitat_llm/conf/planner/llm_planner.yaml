@@ -15,3 +15,11 @@ plan_config:
     rag_data_source_name: "" # rag_data_source_name folder itself
     example_type: "react" # The prompting format
     centralized: False
+    decision_hooks:
+      enable: True
+      concept_confidence_threshold: 0.45
+      divergence_threshold: 0.2
+      correction_divergence_threshold: 0.35
+      low_confidence_action: "AppendObservation"
+      high_divergence_action: "AskHuman"
+      correction_action: "CorrectHuman"

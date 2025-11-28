@@ -151,6 +151,10 @@ class EnvironmentInterface:
         # Set the partial observability flag
         self.partial_obs = self.conf.world_model.partial_obs
 
+        # Belief monitoring state
+        self.belief_divergence: float = 0.0
+        self.belief_update_log: list = []
+
         # set update mode flag: str: gt or obs
         self.wm_update_mode: str = self.conf.world_model.update_mode
 
@@ -326,6 +330,35 @@ class EnvironmentInterface:
             device=self.device,
             dtype=torch.bool,
         )
+
+    def record_concept_confidence(self, agent_uid: int, updates: Dict[str, float]) -> None:
+        """Merge concept confidence updates into an agent's world graph."""
+
+        if agent_uid not in self.world_graph:
+            return
+        self.world_graph[agent_uid].concept_confidence.update(updates)
+
+    def recompute_belief_divergence(self) -> float:
+        """Recalculate and cache divergence between robot and human graphs."""
+
+        if (
+            self.robot_agent_uid not in self.world_graph
+            or self.human_agent_uid not in self.world_graph
+        ):
+            return 0.0
+        divergence = self.world_graph[self.robot_agent_uid].compute_belief_divergence(
+            self.world_graph[self.human_agent_uid]
+        )
+        self.belief_divergence = divergence
+        return divergence
+
+    def register_belief_update(self, action: str, content: str, agent_uid: int) -> None:
+        """Log updates that influence belief alignment."""
+
+        self.belief_update_log.append(
+            {"action": action, "content": content, "agent_uid": agent_uid}
+        )
+        self.recompute_belief_divergence()
 
     def reset_logging(self):
         # empty variables to store the trajectory data initialized in

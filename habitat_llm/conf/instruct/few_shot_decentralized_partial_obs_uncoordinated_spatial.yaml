@@ -3,6 +3,10 @@ prompt: |-
         - Overview:
         Solve the given planning problem as best as you can. The task assigned to you will be situated in a house and will generally involve navigating to objects, picking and placing them on different receptacles to achieve rearrangement. Below is the detailed description of the actions you can use for solving the task. You can assign them to Agent_{id} as required.
 
+        If the robot's understanding is uncertain, prefer a defer action before committing:
+        - When concept confidence is low, call AppendObservation to gather another observation.
+        - When the human and robot disagree, call AskHuman to query intent; if disagreement persists, call CorrectHuman to state the robot's belief.
+
         {tool_descriptions}
         {eot_tag}
 

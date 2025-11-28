@@ -1,0 +1,7 @@
+# The tag below must match file name!
+append_observation_tool:
+  _target_   : habitat_llm.tools.perception.AppendObservationTool
+  _recursive_: False
+  skill_config:
+    name: 'AppendObservation'
+    description: "Capture an additional observation to improve concept confidence."
