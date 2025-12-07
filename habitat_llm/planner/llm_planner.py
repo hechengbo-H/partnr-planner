@@ -152,12 +152,16 @@ class LLMPlanner(Planner):
             grammar_str += f"{tool_name} ::= {tool_grammar_str}\n"
 
         # build rules for each of the argument types
+        furniture_names = [f'"{x.name}"' for x in world_graph.get_all_furnitures()]
+        room_names = [f'"{x.name}"' for x in world_graph.get_all_rooms()]
+
+        # CFG parser expects each rule to have at least one alternative; when no
+        # rooms/furniture are known yet, fall back to a benign placeholder to
+        # keep constrained generation valid while allowing later updates.
         furniture_rule = f"{FURNITURE} ::= " + " | ".join(
-            (f'"{x.name}"' for x in world_graph.get_all_furnitures())
+            furniture_names or ['"None"']
         )
-        room_rule = f"{ROOM} ::= " + " | ".join(
-            (f'"{x.name}"' for x in world_graph.get_all_rooms())
-        )
+        room_rule = f"{ROOM} ::= " + " | ".join(room_names or ['"None"'])
         spatial_constraint_rule = f'{SPATIAL_CONSTRAINT} ::= "next_to"'
         spatial_relation_rule = f'{SPATIAL_RELATION} ::= "on" | "within"'
         free_text_rule = f"{FREE_TEXT} ::= [ \"'.:,!a-zA-Z_0-9]*"

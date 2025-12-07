@@ -52,6 +52,10 @@ class WorldGraph(Graph):
         super().__init__(graph=graph)
         self.agent_asymmetry = False
         self.world_model_type = "privileged"
+        # Track which agent's belief the graph represents (e.g., robot/human).
+        # This attribute is read during deepcopy, so always initialize it even
+        # when not explicitly provided.
+        self.graph_type: str = graph_type or "robot"
         self.concept_confidence: dict = {}
         self.belief_divergence: float = 0.0
         self._logger = logging.getLogger(__name__)
